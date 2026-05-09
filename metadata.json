@@ -1,0 +1,6 @@
+{
+  "name": "Remix: 亿丰咖啡采购风险看板",
+  "description": "提供咖啡采购进度的期货对冲风险看板，包含已结清合同复盘及当前风险敞口监控。",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
