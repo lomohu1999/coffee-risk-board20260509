@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, 
-  Legend, ReferenceDot
+  Legend, ReferenceDot, ReferenceLine, Label, LabelList
 } from 'recharts';
 import { 
   TrendingDown, TrendingUp, AlertTriangle, CheckCircle2, 
@@ -85,8 +85,8 @@ const ContractAnalysis = ({ contract }: any) => {
   const prices = contract.symbol === 'KCK26' ? KCK26_PRICES : RCK26_PRICES;
   
   return (
-    <div className="mb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+    <div className="mb-16">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded uppercase tracking-wider">Closed Contract</span>
@@ -96,45 +96,70 @@ const ContractAnalysis = ({ contract }: any) => {
             <Activity size={18} className="text-slate-400" /> 执行周期: {contract.period}
           </p>
         </div>
-        <div className="flex gap-2">
-          {contract.kpi.map((k: any, idx: number) => (
-            <div key={idx} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-              k.status === '1' 
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                : 'bg-amber-50 text-amber-700 border-amber-100'
-            }`}>
-              {k.status === '1' ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-              {k.label}: <span className="font-bold underline decoration-dotted">{k.result}</span>
-            </div>
-          ))}
+        <div className="flex flex-col gap-3 min-w-[300px]">
+          {contract.kpi.map((k: any, idx: number) => {
+            const isMarketAvg = k.label.includes('大盘均价');
+            const targetVal = isMarketAvg ? contract.marketAvg : contract.competitorPrice;
+            const currentVal = contract.avgPrice;
+            const diff = targetVal - currentVal;
+            // For a "Lower is better" metric (buying price)
+            const achievement = Math.min(100, Math.max(0, (targetVal / currentVal) * 100));
+            
+            return (
+              <div key={idx} className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2">
+                    {k.status === '1' ? <CheckCircle2 size={16} className="text-emerald-500" /> : <XCircle size={16} className="text-amber-500" />}
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wide">{k.label}</span>
+                  </div>
+                  <span className={`text-xs font-black p-1 rounded ${k.status === '1' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'}`}>
+                    {k.result}
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px] font-bold text-slate-400 italic">
+                    <span>当前: {currentVal.toFixed(1)}</span>
+                    <span>目标: {targetVal.toFixed(1)}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-1000 ${k.status === '1' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                      style={{ width: `${achievement}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Market Data & Chart */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          <div className="glass-card p-6 min-h-[400px]">
-             <div className="flex items-center justify-between mb-6">
+          <div className="glass-card p-6 min-h-[450px]">
+             <div className="flex items-center justify-between mb-8">
                 <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                    价格走势与执行回顾 <span className="text-xs font-normal text-slate-400">({contract.unit})</span>
                 </h3>
-                <div className="flex items-center gap-6 text-[10px] font-semibold uppercase tracking-wider">
+                <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-[10px] font-semibold uppercase tracking-wider">
                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500"></div> 市场价格</div>
-                   <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> 点价均价</div>
+                   <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-red-400 border-t border-dashed border-red-400"></div> 大盘均价</div>
+                   <div className="flex items-center gap-1"><div className="w-3 h-0.5 bg-emerald-500 border-t border-dashed border-emerald-500"></div> 点价均价</div>
                    <div className="flex items-center gap-1 border-l border-slate-200 pl-4"><div className="w-2 h-2 rounded-full bg-[#f59e0b]"></div> Candies 成交</div>
                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#8b5cf6]"></div> Wendy 成交</div>
                 </div>
              </div>
-             <div className="h-[300px] w-full">
+             <div className="h-[320px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={prices}>
+                  <AreaChart data={prices} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis 
                       dataKey="date" 
                       fontSize={10} 
@@ -152,9 +177,35 @@ const ContractAnalysis = ({ contract }: any) => {
                       tickFormatter={(val) => val.toFixed(0)}
                     />
                     <Tooltip content={<CustomTooltip unit={contract.unit} />} />
+                    
+                    <ReferenceLine 
+                      y={contract.marketAvg} 
+                      stroke="#ef4444" 
+                      strokeDasharray="5 5" 
+                      strokeWidth={1.5}
+                      label={{ 
+                        value: `大盘: ${contract.marketAvg}`, 
+                        fill: '#ef4444', 
+                        fontSize: 10, 
+                        fontWeight: 'bold',
+                        position: 'right' 
+                      }} 
+                    />
+                    <ReferenceLine 
+                      y={contract.avgPrice} 
+                      stroke="#10b981" 
+                      strokeDasharray="5 5" 
+                      strokeWidth={1.5}
+                      label={{ 
+                        value: `点价: ${contract.avgPrice}`, 
+                        fill: '#10b981', 
+                        fontSize: 10, 
+                        fontWeight: 'bold',
+                        position: 'right' 
+                      }} 
+                    />
+
                     <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" />
-                    {/* Reference line for internal price */}
-                    <Line type="monotone" dataKey={() => contract.avgPrice} stroke="#10b981" strokeWidth={1} strokeDasharray="5 5" dot={false} />
                     
                     {/* Trade Records Mapping */}
                     {contract.tradeRecords && contract.tradeRecords.map((trade: any, idx: number) => (
@@ -351,41 +402,77 @@ const ExposureView = () => {
               </div>
            </div>
            
-           <div className="w-full h-[320px] relative">
+           <div className="w-full h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={outerData}
-                      innerRadius={85}
-                      outerRadius={115}
-                      paddingAngle={3}
-                      dataKey="value"
-                      stroke="none"
-                      startAngle={90}
-                      endAngle={450}
+                  <BarChart 
+                    data={outerData} 
+                    layout="vertical" 
+                    margin={{ top: 5, right: 80, left: 40, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      dataKey="name" 
+                      type="category" 
+                      fontSize={12} 
+                      fontWeight="bold" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      width={80}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'transparent' }}
+                      content={({ active, payload }: any) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="bg-slate-900 text-white p-3 shadow-xl rounded-lg border border-white/10">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{data.name}</p>
+                              <p className="text-sm font-black">{Math.round(data.amount / 100)} 百万元</p>
+                              <p className="text-xs text-blue-400 font-bold">{data.percentage}%</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar 
+                      dataKey="amount" 
+                      radius={[0, 4, 4, 0]} 
+                      barSize={32}
                     >
                       {outerData.map((entry, index) => (
-                        <Cell key={`outer-${index}`} fill={entry.color} />
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
-                    </Pie>
-                    <Tooltip content={<PieTooltip />} />
-                  </PieChart>
+                      {/* Custom labels inside or beside bars */}
+                      <LabelList dataKey="percentage" position="right" content={(props: any) => {
+                        const { x, y, width, value } = props;
+                        return (
+                          <text x={x + width + 10} y={y + 20} fill="#64748b" fontSize={12} fontWeight="bold">
+                            {value}%
+                          </text>
+                        );
+                      }} />
+                    </Bar>
+                  </BarChart>
               </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                 <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em] font-mono">FORWARDS</p>
-                 <p className="text-3xl font-black text-blue-600">4 <span className="text-xs font-bold text-blue-400">Contracts</span></p>
-              </div>
            </div>
            
-           <div className="w-full grid grid-cols-2 gap-4 mt-10">
+           <div className="w-full grid grid-cols-1 gap-3 mt-10">
               {outerData.map((item, idx) => (
-                 <div key={idx} className="flex items-center gap-4 p-5 rounded-2xl bg-blue-50/40 border border-blue-100/50 hover:bg-blue-50 hover:border-blue-200 transition-all">
-                    <div className="w-5 h-5 rounded-lg shadow-sm shrink-0" style={{backgroundColor: item.color}}></div>
-                    <div className="flex-1 flex justify-between items-center min-w-0">
-                       <span className="text-sm font-black text-slate-700 truncate mr-2">{item.name}</span>
-                       <div className="text-right shrink-0">
-                          <p className="text-base font-black text-blue-700">{item.percentage}%</p>
-                          <p className="text-[10px] font-bold text-slate-400">{Math.round(item.amount / 100).toLocaleString()}百万</p>
+                 <div key={idx} className="flex items-center gap-4 p-4 rounded-xl bg-blue-50/40 border border-blue-100/50">
+                    <div className="w-4 h-4 rounded shadow-sm shrink-0" style={{backgroundColor: item.color}}></div>
+                    <div className="flex-1 flex justify-between items-center">
+                       <span className="text-sm font-black text-slate-700">{item.name}</span>
+                       <div className="flex items-center gap-6">
+                          <div className="text-right">
+                             <p className="text-xs font-bold text-slate-400 uppercase">金额</p>
+                             <p className="text-sm font-black text-slate-800">{Math.round(item.amount / 100).toLocaleString()} 百万</p>
+                          </div>
+                          <div className="text-right min-w-[60px]">
+                             <p className="text-xs font-bold text-slate-400 uppercase">占比</p>
+                             <p className="text-sm font-black text-blue-700">{item.percentage}%</p>
+                          </div>
                        </div>
                     </div>
                  </div>
@@ -410,18 +497,33 @@ export default function RiskDashboard() {
               实时追踪期货头寸执行状态与敞口结构。风控策略：空头基差合同。通过点价回补平仓，深度监控大盘均价偏离度及极端回撤风险。
             </p>
           </div>
-          <div className="flex gap-6">
-             <div className="px-6 py-4 bg-white rounded-2xl shadow-md border border-slate-100 text-right min-w-[180px]">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-1">总体计划额</p>
-                <p className="text-3xl font-black text-slate-900">{Math.round(SUMMARY_STATS.totalPlanned / 100).toLocaleString()} <span className="text-sm font-bold text-slate-400 uppercase">百万元</span></p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full lg:w-auto">
+             <div className="px-6 py-5 bg-white rounded-2xl shadow-sm border border-slate-200 hover:border-blue-400 transition-colors">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
+                   <Package size={14} className="text-slate-300" /> 总体计划额
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-slate-900">{Math.round(SUMMARY_STATS.totalPlanned / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">百万元</span>
+                </div>
              </div>
-             <div className="px-6 py-4 bg-blue-50 rounded-2xl shadow-md border border-blue-100 text-right min-w-[180px]">
-                <p className="text-xs font-bold text-blue-400 uppercase tracking-[0.15em] mb-1">已关闭敞口</p>
-                <p className="text-3xl font-black text-blue-600">{Math.round(SUMMARY_STATS.closedExposure / 100).toLocaleString()} <span className="text-sm font-bold text-blue-400 uppercase">百万元</span></p>
+             <div className="px-6 py-5 bg-blue-50/50 rounded-2xl shadow-sm border border-blue-100 hover:border-blue-400 transition-colors">
+                <p className="text-xs font-bold text-blue-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
+                   <CheckCircle2 size={14} className="text-blue-300" /> 已关闭敞口
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-blue-600">{Math.round(SUMMARY_STATS.closedExposure / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-blue-400 uppercase tracking-tighter">百万元</span>
+                </div>
              </div>
-             <div className="px-6 py-4 bg-red-50 rounded-2xl shadow-md border border-red-100 text-right min-w-[180px]">
-                <p className="text-xs font-bold text-red-400 uppercase tracking-[0.15em] mb-1">当前敞口额</p>
-                <p className="text-3xl font-black text-red-600">{Math.round(SUMMARY_STATS.currentExposure / 100).toLocaleString()} <span className="text-sm font-bold text-red-400 uppercase">百万元</span></p>
+             <div className="px-6 py-5 bg-red-50/50 rounded-2xl shadow-sm border border-red-100 hover:border-red-400 transition-colors sm:col-span-2 lg:col-span-1">
+                <p className="text-xs font-bold text-red-400 uppercase tracking-[0.15em] mb-2 flex items-center gap-2">
+                   <AlertTriangle size={14} className="text-red-300" /> 当前敞口额
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-red-600">{Math.round(SUMMARY_STATS.currentExposure / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-red-400 uppercase tracking-tighter">百万元</span>
+                </div>
              </div>
           </div>
         </div>

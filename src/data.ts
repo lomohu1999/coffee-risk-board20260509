@@ -181,7 +181,7 @@ export const CLOSED_CONTRACTS = [
     settlementAvg: 31.7,
     totalAmout: 243.4,
     totalQuantity: 76.8,
-    marketAvg: 3513.8,
+    marketAvg: 3538.1,
     advantageRate: '3.4%',
     competitorPrice: 3538.1,
     traders: [
